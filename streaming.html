@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host</title>
+    <style>
+        #mymain {
+            margin-left: auto;
+            margin-right: auto;
+            width: 320px;
+        }
+
+        #wingleft {}
+
+        #wingright {}
+
+        #localVideo {
+            width: 1280;
+            height: 720;
+            background-color: black;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+</head>
+
+<body>
+    <div id="wingleft"></div>
+    <div id="mymain">
+        <h2>방송</h2>
+        <video id="localVideo" class="remote-video" autoplay muted></video>
+        <br>
+        <button id="mystart" class="btn-main">Room Create</button>
+        <button id="mystop" class="btn-main" disabled>Stop</button>
+        <button id="screenshare" class="btn-main">screenshare</button>
+        <input id="channelNameInput" class="text-center" type="text" placeholder="channel name" autofocus>
+        <a id="channelBtn" href="#" class="btn btn-primary btn-user text-center">
+            CREATE
+        </a>
+    </div>
+    <div id="wingright"></div>
+
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@remotemonster/sdk/remon.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let myChannelId;
+        const channelNameInput = document.getElementById("channelNameInput");
+        const channelButton = document.querySelector('#channelBtn');
+        const socket = io.connect();
+
+        const config = {
+            credential: {
+                serviceId: '94b7f171-5ffa-4723-85e3-7adff3f37479',
+                key: 'bd4a6ce8b860a0e968eccd1027af40cfd9a1125d7a645f57ff3a5ca5bcad0d9e'
+            },
+            view: {
+                local: '#localVideo'
+            },
+            midia: {
+                video: {
+                    width: '1280',
+                    height: '720',
+                    maxBandwidth: 2000
+                },
+                sendonly: true,
+                audio: true
+            }
+        };
+
+        const screenShareOptipon = {
+            width: '1280',
+            height: '720',
+            frameRate: 30,
+            maxBandwidth: 2000,
+        };
+
+        const listener = {
+            onCreate(chid) {
+                console.log(`EVENT FIRED: onCreate: ${chid}`);
+                $('mystart').prop("disabled", true);
+                $('#mystop').prop("disabled", false);
+                myChannelId = chid
+            },
+            onJoin(chid) { console.log(`EVENT FIRED: onJoin: ${chid}`); },
+            onClose() {//통화 종료시 호출
+                console.log('EVENT FIRED: onClose');
+                $('#mystart').prop("disabled", false);
+                $('#mystop').prop("disabled", true);
+                remon.close();
+                remon = new Remon({ config, listener });
+            },
+            onError(error) { console.log(`EVENT FIRED: onError: ${error}`); },
+            onStat(result) { console.log(`EVENT FIRED: onStat: ${result}`); }
+            // Stat => RemoteMonster가 통화품질 데이터를 5초마다 자동으로 생성합니다. 
+            // 통화품질 데이터가 생성될 때 호출됩니다.
+            // 통화품질 데이터가 인자로 전달
+        };
+
+        const remon = new Remon({ config, listener });
+        $('#mystart').click(function () {
+            
+            // createCast의 인자는 방송채널의 ID입니다. 
+            // 실제 서비스에서는 동일한 방송채널의 ID가 아닌,
+            // 고유하고 예측이 어려운 ID를 사용해야합니다.
+            myChannelId = channelNameInput.value ? channelNameInput.value : getRandomId();
+            remon.createCast(myChannelId);
+            socket.emit('channelname', myChannelId);
+        });
+
+
+
+        $('#mystop').click(function () {
+            remon.close();
+        });
+
+
+        $('#screenshare').click(function () {
+            remon.captureScreen(screenShareOptipon.width, screenShareOptipon.height, screenShareOptipon.frameRate, false)
+        });
+
+        function getRandomId() {
+            var text = "";
+            var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            for (var i = 0; i < 5; i++)
+                text += possible.charAt(Math.floor(Math.random() * possible.length));
+            return Date.now() + "_" + text;
+        }
+    </script>
+</body>
+
+</html>

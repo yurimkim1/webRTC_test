@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>watch</title>
+    <style>
+        #mymain {
+            margin-left: auto;
+            margin-right: auto;
+            width: 320px;
+        }
+
+        #wingleft {}
+
+        #wingright {}
+
+        #remoteVideo {
+            width: 1280;
+            height: 720;
+            background-color: black;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+</head>
+
+<body>
+    <div id="wingleft"></div>
+    <div id="mymain">
+        <h2>시청</h2>
+        <video id="remoteVideo" autoplay muted></video>
+        <br>
+        <button id="mystart" class="btn-main">Join</button>
+        <button id="mystop" class="btn btn-main" disabled>Stop</button>
+    </div>
+    <div id="wingright"></div>
+
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@remotemonster/sdk/remon.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let myChannelId;
+        let remon;
+        const socket = io.connect();
+
+        const config = {
+            credential: {
+                serviceId: '94b7f171-5ffa-4723-85e3-7adff3f37479',
+                key: 'bd4a6ce8b860a0e968eccd1027af40cfd9a1125d7a645f57ff3a5ca5bcad0d9e'
+            },
+            view: {
+                remote: '#remoteVideo'
+            },
+            media: {
+                recvonly: true,
+                // audio: true,
+                // video: true
+            }
+        };
+
+        const listener = {
+            onCreate(chid) { console.log(`EVENT FIRED: onCreate: ${chid}`); },
+            onJoin(chid) { console.log(`EVENT FIRED: onJoin: ${chid}`); $('#mystart').prop("disabled", true); $('#mystop').prop("disabled", false); },
+            onClose() {
+                console.log('EVENT FIRED: onClose');
+                $('#mystop').prop("disabled", true);
+                remon.close();
+                remon = new Remon({ config, listener });
+            },
+            onError(error) { console.log(`EVENT FIRED: onError: ${error}`); },
+            onStat(result) { console.log(`EVENT FIRED: onStat: ${result}`); }
+        };
+
+        remon = new Remon({ config, listener });
+
+        $('#mystop').click(function () {
+            remon.close();
+        });    
+        
+        socket.on('channelnametowatch', function(myChannelId) {
+                console.log("dsadsad", myChannelId);
+        
+        
+                $('#mystart').click(function () {
+                    
+                     remon.joinCast(myChannelId);
+            })
+            
+        
+                
+            
+        });
+            
+            
+    </script>
+</body>
+
+</html>
